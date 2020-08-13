@@ -65,6 +65,7 @@ def create_tf_example(group, path):
     classes_text = []
     classes = []
 
+    id_set = set()
     for index, row in group.object.iterrows():
         xmins.append(row['xmin'] / width)
         xmaxs.append(row['xmax'] / width)
@@ -72,6 +73,11 @@ def create_tf_example(group, path):
         ymaxs.append(row['ymax'] / height)
         classes_text.append(row['class'].encode('utf8'))
         classes.append(class_text_to_int(row['class']))
+
+    curr_id = filename
+    if curr_id in id_set:
+        print("Duplicate:", curr_id)
+    id_set.add(curr_id)
 
     tf_example = tf.train.Example(features=tf.train.Features(feature={
         'image/height': dataset_util.int64_feature(height),
@@ -95,7 +101,8 @@ def main(_):
     path = os.path.join(os.getcwd(), FLAGS.image_dir)
     examples = pd.read_csv(FLAGS.csv_input)
     grouped = split(examples, 'filename')
-    for group in grouped:
+    for iteration, group in enumerate(grouped):
+        print("Iteration:", iteration)
         tf_example = create_tf_example(group, path)
         writer.write(tf_example.SerializeToString())
 
